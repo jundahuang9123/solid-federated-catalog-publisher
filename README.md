@@ -23,7 +23,7 @@ Existing Solid Pod
         v
 Solid Publisher
         |
-        | POST RDF + Solid-OIDC token
+        | POST RDF via Solid session fetch
         v
 Central Federated Catalogue
         |
@@ -97,16 +97,39 @@ If the Pod layout differs, use the explicit catalogue URL.
 
 ## Publishing A Catalogue
 
-Expected central request:
+For strict Solid-OIDC catalogues, leave the access-token override empty and let
+the authenticated Solid `session.fetch` make the `POST`. That path sets the RDF
+and participant headers, while the Solid client decides whether and how to attach
+`Authorization` and `DPoP`:
 
 ```http
 POST /catalog
-Authorization: Bearer <Solid-OIDC access token>
 Content-Type: text/turtle
 X-Participant-WebID: <authenticated WebID>
+X-Participant-Id: <authenticated WebID>
 ```
 
-The browser uses the authenticated Solid session when available. Local file upload can preview without login, but the central catalogue may still require authentication for publishing.
+Whether Inrupt's `session.fetch` attaches a DPoP-bound request for the central
+catalogue URL must be verified with `docs/auth-findings.md` before calling the
+strict OIDC path secure end-to-end.
+
+The access-token override field sends a plain `Authorization: Bearer <token>`.
+Use it for local development or catalogue modes that do not require DPoP. Do not
+treat it as compatible with a strict DPoP-validating OIDC catalogue.
+
+Local file upload can preview without login, but the central catalogue may still
+require authentication for publishing.
+
+## Auth Compatibility
+
+| Catalogue mode | Publisher path | Status |
+| --- | --- | --- |
+| `SOLID_AUTH_MODE=trusted-header` | WebID headers, optional manual bearer override | Demo/local only |
+| `SOLID_AUTH_MODE=oidc`, `SOLID_AUTH_REQUIRE_DPOP=true` | Real Solid login, no token override, delegated `session.fetch` | Requires Phase 0 capture and end-to-end verification |
+| Manual token override | Plain `Authorization: Bearer` | Not proof-of-possession |
+
+See [docs/auth-findings.md](docs/auth-findings.md) and
+[docs/INTEGRATION_TEST.md](docs/INTEGRATION_TEST.md).
 
 ## Using The CLI Publisher
 
@@ -119,6 +142,8 @@ python tools/publish-local-catalog/publish_local_catalog.py \
 ```
 
 The CLI exits `0` for a `2xx` central catalogue response and non-zero otherwise.
+It sends the same plain bearer override as the UI. Use it for trusted-header or
+non-DPoP development modes, not for the strict DPoP path.
 
 ## Expected Central Catalogue Behavior
 
@@ -151,4 +176,3 @@ npm run build
 ## Credits
 
 See [CREDITS.md](CREDITS.md) and [NOTICE](NOTICE).
-

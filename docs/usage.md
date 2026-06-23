@@ -20,6 +20,31 @@ Open `http://localhost:5173`.
 
 Local file upload lets you preview RDF without Solid login. Publishing may still fail if the central catalogue requires a real Solid-OIDC token.
 
+For the sibling catalogue's local demo mode, start it with:
+
+```bash
+cd ../federated-catalog
+SOLID_AUTH_MODE=trusted-header make up-solid
+```
+
+Then publish to `http://localhost:8000/catalog`. This mode trusts the declared
+WebID header and is not a secure identity proof.
+
+## Strict OIDC Publishing
+
+For `SOLID_AUTH_MODE=oidc` with `SOLID_AUTH_REQUIRE_DPOP=true`, log in with a
+real Solid identity and leave the access-token override empty. The browser path
+delegates the push to Solid `session.fetch`, so the real request must be checked
+before making a secure end-to-end claim:
+
+```bash
+python tools/catch-publisher-request/catch_push.py --port 8787
+```
+
+Set the central catalogue URL to `http://localhost:8787/catalog`, publish, and
+inspect the captured `Authorization` and `DPoP` headers. See
+`docs/auth-findings.md` and `docs/INTEGRATION_TEST.md`.
+
 ## CLI
 
 ```bash
@@ -30,3 +55,5 @@ python tools/publish-local-catalog/publish_local_catalog.py \
   --token dev-token
 ```
 
+The CLI sends a plain bearer token when `--token` is set. It is intended for
+local/demo modes, not for strict DPoP verification.
