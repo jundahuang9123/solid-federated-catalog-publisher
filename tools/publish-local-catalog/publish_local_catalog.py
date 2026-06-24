@@ -31,6 +31,7 @@ def main() -> int:
     headers = {
         "Content-Type": detect_content_type(catalog_path),
         "X-Participant-WebID": args.webid,
+        "X-Participant-Id": args.webid,
     }
     if args.token:
         headers["Authorization"] = f"Bearer {args.token}"
@@ -53,4 +54,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
